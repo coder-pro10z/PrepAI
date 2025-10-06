@@ -18,6 +18,16 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
+// 👉 Add a simple health‑check route
+app.get('/', (req, res) => {
+  res.send('API is running');
+});
+
+// Optional: a JSON health endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: Date.now() });
+});
+
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interview', {
   useNewUrlParser: true,
@@ -25,6 +35,8 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interv
 });
 
 // Routes
+// Import routes (paths are relative to this file)
+
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/sessions', require('./routes/sessions'));
