@@ -1,0 +1,375 @@
+/* Register Component Styles */
+
+.register-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.register-card {
+  background: rgba(24, 24, 27, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(190, 242, 100, 0.1);
+  border-radius: 24px;
+  padding: 48px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.register-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.register-logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #bef264, #84cc16);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #09090b;
+}
+
+.register-logo-text {
+  font-size: 28px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #bef264, #84cc16);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.register-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #edecf0;
+  margin: 0 0 8px 0;
+}
+
+.register-subtitle {
+  color: #a1a1aa;
+  font-size: 16px;
+  margin: 0;
+}
+
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.register-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.register-label {
+  color: #edecf0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.register-input-container {
+  position: relative;
+}
+
+.register-input {
+  width: 100%;
+  background: rgba(9, 9, 11, 0.8);
+  border: 2px solid #27272a;
+  border-radius: 12px;
+  padding: 16px 20px;
+  color: #edecf0;
+  font-size: 16px;
+  outline: none;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.register-input:focus {
+  border-color: #bef264;
+  box-shadow: 0 0 0 3px rgba(190, 242, 100, 0.1);
+}
+
+.register-input::placeholder {
+  color: #71717a;
+}
+
+.register-input-icon {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #71717a;
+}
+
+.register-password-toggle {
+  background: none;
+  border: none;
+  color: #71717a;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color 0.3s ease;
+}
+
+.register-password-toggle:hover {
+  color: #bef264;
+}
+
+.register-password-strength {
+  margin-top: 8px;
+}
+
+.register-strength-bar {
+  width: 100%;
+  height: 4px;
+  background: #27272a;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.register-strength-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.register-strength-weak {
+  background: #ef4444;
+  width: 25%;
+}
+
+.register-strength-fair {
+  background: #f59e0b;
+  width: 50%;
+}
+
+.register-strength-good {
+  background: #84cc16;
+  width: 75%;
+}
+
+.register-strength-strong {
+  background: #22c55e;
+  width: 100%;
+}
+
+.register-strength-text {
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.register-checkbox-group {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.register-checkbox {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: #bef264;
+}
+
+.register-checkbox-label {
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.register-checkbox-link {
+  color: #bef264;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.register-checkbox-link:hover {
+  color: #a3e635;
+}
+
+.register-submit-button {
+  background: linear-gradient(135deg, #bef264, #84cc16);
+  color: #09090b;
+  border: none;
+  border-radius: 12px;
+  padding: 16px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.register-submit-button:hover {
+  background: linear-gradient(135deg, #a3e635, #65a30d);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(190, 242, 100, 0.3);
+}
+
+.register-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.register-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.register-divider-line {
+  flex: 1;
+  height: 1px;
+  background: #27272a;
+}
+
+.register-divider-text {
+  color: #71717a;
+  font-size: 14px;
+}
+
+.register-social-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.register-social-button {
+  flex: 1;
+  background: #27272a;
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  padding: 12px;
+  color: #edecf0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.register-social-button:hover {
+  background: #3f3f46;
+  transform: translateY(-1px);
+}
+
+.register-footer {
+  text-align: center;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #27272a;
+}
+
+.register-footer-text {
+  color: #a1a1aa;
+  font-size: 14px;
+}
+
+.register-footer-link {
+  color: #bef264;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.register-footer-link:hover {
+  color: #a3e635;
+}
+
+.register-error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #fca5a5;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.register-success-message {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #86efac;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Loading Animation */
+.register-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .register-container {
+    padding: 16px;
+  }
+  
+  .register-card {
+    padding: 32px 24px;
+  }
+  
+  .register-title {
+    font-size: 28px;
+  }
+  
+  .register-logo-text {
+    font-size: 24px;
+  }
+  
+  .register-social-buttons {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .register-card {
+    padding: 24px 20px;
+  }
+  
+  .register-title {
+    font-size: 24px;
+  }
+  
+  .register-input {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+}
