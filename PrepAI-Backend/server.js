@@ -1,9 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
-require('dotenv').config();
+const { connectDB } = require('./config/db')
+
 
 const app = express();
 const server = http.createServer(app);
@@ -29,10 +31,10 @@ app.get('/api/health', (req, res) => {
 });
 
 // MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interview', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
+// mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interview', {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+// });
 
 // Routes
 // Import routes (paths are relative to this file)
@@ -59,7 +61,18 @@ io.on('connection', (socket) => {
   });
 });
 
+
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+
+const startServer = async () => {
+  await connectDB();
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+};
+startServer();
+
+// connectDB()
+// server.listen(PORT, () => {
+//   console.log(`Server running on port ${PORT}`);
+// });
