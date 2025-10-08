@@ -2,73 +2,32 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const InterviewSession = require('../models/InterviewSession');
-const auth = require('../middleware/auth');
 const router = express.Router();
+const { validateToken, loginValidation, signUpValidation } = require('../middleware/auth')
+const { tokenAccessChecker, login, register } = require('../controllers/auth.controller')
 
-// Register
-router.post('/register', async (req, res) => {
-  try {
-    const { name, email, password, profile } = req.body;
-    
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
+// Register --> First It will validate the values passed using JOI and then check if user is registered or not if not then create the User
+router.post('/register', signUpValidation, register);
 
-    const user = new User({ name, email, password, profile });
-    await user.save();
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.status(201).json({ token, user: { id: user._id, name, email, profile } });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
-
-// Login
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    const user = await User.findOne({ email });
-    if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
-    res.json({ token, user: { id: user._id, name: user.name, email, profile: user.profile } });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-});
+// Login  --> Firts validate the email and password have some values then it will check in DB if the values are present or not  if present then we allow them to move forward.
+router.post('/login', loginValidation, login);
 
 // Verify token and get user data
-router.get('/verify', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.userId).select('-password');
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.json({ user: { id: user._id, name: user.name, email: user.email, profile: user.profile } });
-  } catch (error) {
-    console.error('Error verifying token:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
+router.get('/verify', validateToken, tokenAccessChecker);
 
 // Get user statistics
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', validateToken, async (req, res) => {
   try {
     const userId = req.user.userId;
-    
+
     // Get all user's interview sessions
     const sessions = await InterviewSession.find({ userId }).sort({ createdAt: -1 });
-    
+
     // Calculate basic statistics
     const totalInterviews = sessions.length;
     const completedInterviews = sessions.filter(s => s.status === 'completed').length;
     const totalTime = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-    
+
     // Calculate average scores from actual data
     const completedWithScores = sessions.filter(s => s.status === 'completed');
     let averageScore = 0;
@@ -76,7 +35,7 @@ router.get('/stats', auth, async (req, res) => {
     let behavioralAverage = 0;
     let communicationAverage = 0;
     let problemSolvingAverage = 0;
-    
+
     if (completedWithScores.length > 0) {
       // Calculate overall average from feedback scores
       const totalScores = completedWithScores.map(session => {
@@ -92,32 +51,32 @@ router.get('/stats', auth, async (req, res) => {
         }
         return scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 75;
       });
-      
+
       averageScore = Math.round(totalScores.reduce((a, b) => a + b, 0) / totalScores.length);
-      
+
       // Calculate skill-specific averages
       technicalAverage = Math.round(completedWithScores.reduce((sum, s) => {
         return sum + (s.feedback?.scores?.technical || s.feedback?.overallScore || 75);
       }, 0) / completedWithScores.length);
-      
+
       behavioralAverage = Math.round(completedWithScores.reduce((sum, s) => {
         return sum + (s.feedback?.scores?.behavioral || s.feedback?.overallScore || 75);
       }, 0) / completedWithScores.length);
-      
+
       communicationAverage = Math.round(completedWithScores.reduce((sum, s) => {
         return sum + (s.feedback?.scores?.communication || 80);
       }, 0) / completedWithScores.length);
-      
+
       problemSolvingAverage = Math.round(completedWithScores.reduce((sum, s) => {
         return sum + (s.feedback?.scores?.problemSolving || 78);
       }, 0) / completedWithScores.length);
     }
-    
+
     // Calculate weekly progress
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
     const weeklyInterviews = sessions.filter(s => new Date(s.createdAt) >= oneWeekAgo).length;
-    
+
     // Calculate improvement rate
     const twoWeeksAgo = new Date();
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
@@ -125,17 +84,17 @@ router.get('/stats', auth, async (req, res) => {
       const sessionDate = new Date(s.createdAt);
       return sessionDate >= twoWeeksAgo && sessionDate < oneWeekAgo;
     }).length;
-    
-    const weeklyGrowth = previousWeekInterviews > 0 
+
+    const weeklyGrowth = previousWeekInterviews > 0
       ? Math.round(((weeklyInterviews - previousWeekInterviews) / previousWeekInterviews) * 100)
       : weeklyInterviews > 0 ? 100 : 0;
-    
+
     // Calculate streak days
     const streakDays = Math.min(totalInterviews, 7);
-    
+
     // Skills improvement calculation
     const skillsImproved = Math.min(4, Math.floor(totalInterviews / 2));
-    
+
     // Recent activity from actual sessions
     const recentActivity = sessions.slice(0, 5).map(session => ({
       id: session._id,
@@ -143,10 +102,10 @@ router.get('/stats', auth, async (req, res) => {
       company: session.companyType || 'Practice Company',
       date: new Date(session.createdAt).toLocaleDateString(),
       score: session.feedback?.overallScore || Math.floor(Math.random() * 30) + 70,
-      status: session.feedback?.overallScore >= 85 ? 'excellent' : 
-              session.feedback?.overallScore >= 75 ? 'good' : 'average'
+      status: session.feedback?.overallScore >= 85 ? 'excellent' :
+        session.feedback?.overallScore >= 75 ? 'good' : 'average'
     }));
-    
+
     // Skill scores for radar charts
     const skillScores = {
       technical: {
@@ -170,7 +129,7 @@ router.get('/stats', auth, async (req, res) => {
         efficiency: Math.max(70, averageScore - 15) || 60
       }
     };
-    
+
     // Performance metrics
     const performanceMetrics = {
       technicalAverage,
@@ -178,7 +137,7 @@ router.get('/stats', auth, async (req, res) => {
       improvementRate: weeklyGrowth,
       consistencyScore: totalInterviews > 0 ? Math.min(100, (completedInterviews / totalInterviews) * 100) : 0
     };
-    
+
     const stats = {
       totalInterviews,
       completedInterviews,
@@ -194,7 +153,7 @@ router.get('/stats', auth, async (req, res) => {
       recentActivity,
       performanceMetrics
     };
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error fetching user stats:', error);

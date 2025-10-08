@@ -5,6 +5,7 @@ const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
 const { connectDB } = require('./config/db')
+const authRouter = require('./routes/auth')
 
 
 const app = express();
@@ -17,8 +18,14 @@ const io = socketIo(server, {
 });
 
 // Middleware
-app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
+app.use(cors({
+  origin: process.env.CLIENT_URL || "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["content-type", "Authorization"],
+  credentials: true
+}));
 
 // 👉 Add a simple health‑check route
 app.get('/', (req, res) => {
@@ -39,7 +46,7 @@ app.get('/api/health', (req, res) => {
 // Routes
 // Import routes (paths are relative to this file)
 
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', authRouter);
 app.use('/api/interviews', require('./routes/interviews'));
 app.use('/api/sessions', require('./routes/sessions'));
 

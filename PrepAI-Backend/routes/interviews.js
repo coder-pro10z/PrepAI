@@ -1,6 +1,6 @@
 const express = require('express');
 const OpenAI = require('openai');
-const auth = require('../middleware/auth');
+const { validateToken } = require('../middleware/auth');
 const InterviewSession = require('../models/InterviewSession');
 const router = express.Router();
 
@@ -10,7 +10,7 @@ const openai = new OpenAI({
 });
 
 // Generate interview questions based on role and experience
-router.post('/generate-questions', auth, async (req, res) => {
+router.post('/generate-questions', validateToken, async (req, res) => {
   try {
     const {
       jobRole,
@@ -175,13 +175,13 @@ router.post('/generate-questions', auth, async (req, res) => {
 });
 
 // AI interviewer response
-router.post('/ai-response', auth, async (req, res) => {
+router.post('/ai-response', validateToken, async (req, res) => {
   try {
-    const { 
-      question, 
-      answer, 
-      jobRole, 
-      experienceLevel, 
+    const {
+      question,
+      answer,
+      jobRole,
+      experienceLevel,
       conversationHistory = [],
       questionNumber = 1,
       totalQuestions = 5
@@ -193,7 +193,7 @@ router.post('/ai-response', auth, async (req, res) => {
     Candidate's Answer: "${answer}"
     Question ${questionNumber} of ${totalQuestions}
     
-    Previous conversation context: ${conversationHistory.slice(-2).map(entry => 
+    Previous conversation context: ${conversationHistory.slice(-2).map(entry =>
       `Q: ${entry.question}\nA: ${entry.answer}`
     ).join('\n\n')}
 
@@ -214,7 +214,7 @@ router.post('/ai-response', auth, async (req, res) => {
           content: "You are a warm, professional interviewer. Be encouraging, natural, and human-like in your responses. Avoid robotic or overly formal language."
         },
         {
-          role: "user", 
+          role: "user",
           content: prompt
         }
       ],
@@ -225,7 +225,7 @@ router.post('/ai-response', auth, async (req, res) => {
     res.json({ response: completion.choices[0].message.content });
   } catch (error) {
     console.error('AI response error:', error);
-    
+
     // Fallback responses based on question type
     const fallbackResponses = [
       "That's a great perspective! I can see you've put thought into this.",
@@ -234,77 +234,77 @@ router.post('/ai-response', auth, async (req, res) => {
       "Thank you for sharing that. It's clear you have valuable experience in this area.",
       "That's exactly the kind of thinking we're looking for. Well articulated!"
     ];
-    
+
     const randomResponse = fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
     res.json({ response: randomResponse });
   }
 });
 
 // Get user statistics and performance data
-router.get('/user-stats', auth, async (req, res) => {
+router.get('/user-stats', validateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    
+
     // Get all user sessions
     const sessions = await InterviewSession.find({ user: userId });
-    
+
     // Calculate statistics
     const totalInterviews = sessions.length;
     const completedInterviews = sessions.filter(s => s.status === 'completed').length;
     const totalTime = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-    
+
     // Calculate average scores
     const completedSessions = sessions.filter(s => s.status === 'completed' && s.scores);
-    const avgTechnicalScore = completedSessions.length > 0 
+    const avgTechnicalScore = completedSessions.length > 0
       ? Math.round(completedSessions.reduce((sum, s) => sum + (s.scores?.technical || 0), 0) / completedSessions.length)
       : 0;
     const avgBehavioralScore = completedSessions.length > 0
       ? Math.round(completedSessions.reduce((sum, s) => sum + (s.scores?.behavioral || 0), 0) / completedSessions.length)
       : 0;
     const overallScore = Math.round((avgTechnicalScore + avgBehavioralScore) / 2);
-    
+
     // Calculate weekly growth (compare last 7 days vs previous 7 days)
     const now = new Date();
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    
+
     const thisWeekSessions = sessions.filter(s => new Date(s.createdAt) >= lastWeek);
-    const lastWeekSessions = sessions.filter(s => 
+    const lastWeekSessions = sessions.filter(s =>
       new Date(s.createdAt) >= twoWeeksAgo && new Date(s.createdAt) < lastWeek
     );
-    
-    const weeklyGrowth = lastWeekSessions.length > 0 
+
+    const weeklyGrowth = lastWeekSessions.length > 0
       ? Math.round(((thisWeekSessions.length - lastWeekSessions.length) / lastWeekSessions.length) * 100)
       : thisWeekSessions.length > 0 ? 100 : 0;
-    
+
     // Calculate streak (consecutive days with interviews)
     const sortedSessions = sessions
       .filter(s => s.status === 'completed')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
+
     let streak = 0;
     let currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0);
-    
+
     for (let i = 0; i < 30; i++) { // Check last 30 days
       const dayStart = new Date(currentDate);
       const dayEnd = new Date(currentDate);
       dayEnd.setHours(23, 59, 59, 999);
-      
+
       const hasSessionThisDay = sortedSessions.some(s => {
         const sessionDate = new Date(s.createdAt);
         return sessionDate >= dayStart && sessionDate <= dayEnd;
       });
-      
+
       if (hasSessionThisDay) {
         streak++;
       } else if (i > 0) { // Allow for today to not have a session yet
         break;
       }
-      
+
       currentDate.setDate(currentDate.getDate() - 1);
     }
-    
+
     // Calculate detailed skill scores
     const skillScores = {
       technical: {
@@ -328,7 +328,7 @@ router.get('/user-stats', auth, async (req, res) => {
         efficiency: 0
       }
     };
-    
+
     // Calculate skill averages from completed sessions
     if (completedSessions.length > 0) {
       completedSessions.forEach(session => {
@@ -345,10 +345,10 @@ router.get('/user-stats', auth, async (req, res) => {
           });
         }
       });
-      
+
       // Average the scores
       Object.keys(skillScores.technical).forEach(skill => {
-        skillScores.technical[skill] = Math.round(skillScores.technical[skill] / completedSessions.length) || 
+        skillScores.technical[skill] = Math.round(skillScores.technical[skill] / completedSessions.length) ||
           Math.floor(Math.random() * 20) + 70; // Fallback with realistic range
       });
       Object.keys(skillScores.behavioral).forEach(skill => {
@@ -364,7 +364,7 @@ router.get('/user-stats', auth, async (req, res) => {
         skillScores.behavioral[skill] = Math.floor(Math.random() * 20) + 60;
       });
     }
-    
+
     // Recent activity
     const recentActivity = sessions
       .filter(s => s.status === 'completed')
@@ -378,7 +378,7 @@ router.get('/user-stats', auth, async (req, res) => {
         date: formatTimeAgo(session.createdAt),
         status: getPerformanceStatus(session.scores?.overall || 75)
       }));
-    
+
     const stats = {
       totalInterviews,
       completedInterviews,
@@ -399,7 +399,7 @@ router.get('/user-stats', auth, async (req, res) => {
         consistencyScore: calculateConsistencyScore(sessions)
       }
     };
-    
+
     res.json(stats);
   } catch (error) {
     console.error('Error fetching user stats:', error);
@@ -413,7 +413,7 @@ function formatTimeAgo(date) {
   const diffMs = now - new Date(date);
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
   const diffDays = Math.floor(diffHours / 24);
-  
+
   if (diffHours < 1) return 'Just now';
   if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
   if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
@@ -431,7 +431,7 @@ function calculateSkillsImproved(sessions) {
   // Calculate how many skills have improved over time
   const completedSessions = sessions.filter(s => s.status === 'completed').slice(-10);
   if (completedSessions.length < 2) return 0;
-  
+
   // Simple calculation - count skills that have improved
   return Math.floor(Math.random() * 3) + 2; // 2-4 skills improved
 }
@@ -439,27 +439,27 @@ function calculateSkillsImproved(sessions) {
 function calculateImprovementRate(sessions) {
   const completedSessions = sessions.filter(s => s.status === 'completed');
   if (completedSessions.length < 2) return 0;
-  
+
   const recent = completedSessions.slice(-5);
   const older = completedSessions.slice(-10, -5);
-  
+
   if (older.length === 0) return 0;
-  
+
   const recentAvg = recent.reduce((sum, s) => sum + (s.scores?.overall || 0), 0) / recent.length;
   const olderAvg = older.reduce((sum, s) => sum + (s.scores?.overall || 0), 0) / older.length;
-  
+
   return Math.round(((recentAvg - olderAvg) / olderAvg) * 100);
 }
 
 function calculateConsistencyScore(sessions) {
   const completedSessions = sessions.filter(s => s.status === 'completed');
   if (completedSessions.length < 3) return 0;
-  
+
   const scores = completedSessions.map(s => s.scores?.overall || 0);
   const avg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
   const variance = scores.reduce((sum, score) => sum + Math.pow(score - avg, 2), 0) / scores.length;
   const stdDev = Math.sqrt(variance);
-  
+
   // Lower standard deviation = higher consistency
   return Math.max(0, Math.round(100 - stdDev));
 }
