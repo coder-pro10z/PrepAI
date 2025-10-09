@@ -4,7 +4,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const socketIo = require('socket.io');
-const { connectDB } = require('./config/db');
+const { connectDB } = require('./config/db')
+const authRouter = require('./routes/auth')
 
 // 👉 Import the OpenAI SDK
 const { OpenAI } = require('openai');
@@ -35,8 +36,14 @@ const io = socketIo(server, {
 });
 
 // Middleware
-app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
+app.use(cors({
+  origin: process.env.CLIENT_URL || "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["content-type", "Authorization"],
+  credentials: true
+}));
 
 // Health‑check routes
 app.get('/', (req, res) => res.send('API is running'));

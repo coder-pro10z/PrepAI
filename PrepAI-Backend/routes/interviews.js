@@ -1,5 +1,8 @@
 // routes/interviews.js
 const express = require('express');
+const OpenAI = require('openai');
+const { validateToken } = require('../middleware/auth');
+const InterviewSession = require('../models/InterviewSession');
 const router = express.Router();
 
 // Helper to build the prompt – (unchanged)
