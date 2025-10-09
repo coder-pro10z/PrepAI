@@ -12,7 +12,8 @@ const { OpenAI } = require('openai');
 // 👉 Create the client – **use the correct env var name** (OPENAI_API_KEY)
 //     and point it at the OSS endpoint (OSS_API_BASE) you defined in .env
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,          // <-- correct name
+  // apiKey: process.env.OPENAI_API_KEY,          // <-- correct name
+  apiKey: process.env.OPENROUTER_API_KEY,          // <-- correct name
   baseURL: process.env.OSS_API_BASE || 'https://openrouter.ai/api/v1'
 
   // baseURL: process.env.OSS_API_BASE || 'https://api.openai.com/v1'
@@ -21,7 +22,7 @@ const openai = new OpenAI({
 console.log('--- ENV VALUES (Node) ---');
 console.log('MONGODB_URI =', process.env.MONGODB_URI);
 console.log('OSS_API_BASE =', process.env.OSS_API_BASE);
-console.log('OPENAI_API_KEY =', process.env.OPENAI_API_KEY?.slice(0, 8) + '...');
+console.log('OPENROUTER_API_KEY =', process.env.OPENROUTER_API_KEY?.slice(0, 8) + '...');
 console.log('--------------------------');
 
 const app = express();

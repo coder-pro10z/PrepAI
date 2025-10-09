@@ -52,8 +52,8 @@ router.post('/generate-questions', async (req, res) => {
     // 3️⃣ Call the OSS model (gpt‑oss‑120b)
     // -------------------------------------------------
     const completion = await req.openai.chat.completions.create({
-      // model: 'gpt-oss-120b',          // free/open‑source model
-      model: 'openai/gpt-oss-120b',
+      model: 'gpt-oss-120b',          // free/open‑source model
+      // model: 'openai/gpt-oss-120b',
       messages: [
         {
           role: 'system',
