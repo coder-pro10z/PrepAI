@@ -38,6 +38,12 @@ const io = socketIo(server, {
 app.use(cors());
 app.use(express.json());
 
+// so we attach it to the request object for easy access.
+app.use((req, res, next) => {
+  req.openai = openai;   // <-- make it available to route handlers
+  next();
+});
+
 // Health‑check routes
 app.get('/', (req, res) => res.send('API is running'));
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: Date.now() }));
@@ -55,11 +61,7 @@ app.get('/api/test-gpt', async (req, res) => {
 });
 
 // Routes – the OpenAI client is needed inside the interview route,
-// so we attach it to the request object for easy access.
-app.use((req, res, next) => {
-  req.openai = openai;   // <-- make it available to route handlers
-  next();
-});
+
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/interviews', require('./routes/interviews'));

@@ -60,18 +60,61 @@ function buildInterviewPrompt(params) {
  * @param {string} rawResponse – the `content` field from the LLM completion
  * @returns {Array<Object>} – array of question objects (empty array on failure)
  */
+// function parseQuestionsFromAI(rawResponse) {
+//   try {
+//     // The model may wrap the JSON in extra text; try to locate the first '[' and the last ']'
+//     const start = rawResponse.indexOf('[');
+//     const end = rawResponse.lastIndexOf(']') + 1;
+//     const jsonString = (start !== -1 && end !== -1) ? rawResponse.slice(start, end) : rawResponse;
+
+//     const parsed = JSON.parse(jsonString);
+//     // Ensure we actually got an array
+//     return Array.isArray(parsed) ? parsed : [];
+//   } catch (e) {
+//     console.error('❌ Failed to parse LLM JSON response:', e);
+//     return [];
+//   }
+// }
+
+//Fixed version to handle markdown code blocks and extra text
+// function parseQuestionsFromAI(rawResponse) {
+//   try {
+//     const cleaned = rawResponse
+//       .replace(/```json/g, "")
+//       .replace(/```/g, "")
+//       .replace(/^.*?\[/s, "[")   // remove text before [
+//       .replace(/\][^]*$/, "]")   // remove text after ]
+//       .trim();
+
+//     const parsed = JSON.parse(cleaned);
+//     return Array.isArray(parsed) ? parsed : [];
+//   } catch (e) {
+//     console.error("❌ Failed to parse LLM JSON response:", e);
+//     return [];
+//   }
+// }
+
 function parseQuestionsFromAI(rawResponse) {
   try {
-    // The model may wrap the JSON in extra text; try to locate the first '[' and the last ']'
-    const start = rawResponse.indexOf('[');
-    const end = rawResponse.lastIndexOf(']') + 1;
-    const jsonString = (start !== -1 && end !== -1) ? rawResponse.slice(start, end) : rawResponse;
+    if (!rawResponse) return [];
+
+    // Remove Markdown code fences like ```json or ```
+    let cleaned = rawResponse
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    // Try to locate JSON array inside the text
+    const start = cleaned.indexOf("[");
+    const end = cleaned.lastIndexOf("]") + 1;
+    const jsonString =
+      start !== -1 && end !== -1 ? cleaned.slice(start, end) : cleaned;
 
     const parsed = JSON.parse(jsonString);
-    // Ensure we actually got an array
+
     return Array.isArray(parsed) ? parsed : [];
   } catch (e) {
-    console.error('❌ Failed to parse LLM JSON response:', e);
+    console.error("❌ Failed to parse LLM JSON response:", e);
     return [];
   }
 }

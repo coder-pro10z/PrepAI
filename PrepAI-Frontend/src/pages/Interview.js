@@ -166,58 +166,69 @@ const Interview = () => {
       });
 
       // Enhanced fallback questions with follow-ups
-      const enhancedQuestions = questionsResponse.data.questions || [
-        {
-          question: "Tell me about yourself and your background in software development.",
-          followUps: [
-            "What specific technologies have you worked with most recently?",
-            "Can you elaborate on your most significant achievement?",
-            "How do you stay updated with new technologies?"
-          ]
-        },
-        {
-          question: "What interests you most about this role and our company?",
-          followUps: [
-            "What do you know about our company culture?",
-            "How does this role align with your career goals?",
-            "What questions do you have about the team structure?"
-          ]
-        },
-        {
-          question: "Describe a challenging technical problem you've solved recently.",
-          followUps: [
-            "What was your thought process for solving this?",
-            "How did you handle any roadblocks you encountered?",
-            "What would you do differently if you faced this problem again?"
-          ]
-        },
-        {
-          question: "How do you approach debugging a complex issue in production?",
-          followUps: [
-            "Can you walk me through your debugging methodology?",
-            "How do you prioritize which issues to investigate first?",
-            "Tell me about a time when debugging led to a larger architectural insight."
-          ]
-        },
-        {
-          question: "Describe your experience working in a team environment.",
-          followUps: [
-            "How do you handle disagreements with team members?",
-            "Can you give an example of when you had to mentor someone?",
-            "How do you ensure effective communication in remote teams?"
-          ]
-        },
-        {
-          question: "Where do you see yourself in the next 3-5 years?",
-          followUps: [
-            "What skills are you most excited to develop?",
-            "How does this position fit into your long-term goals?",
-            "What kind of impact do you want to make in your next role?"
-          ]
-        }
-      ];
+      // const enhancedQuestions = questionsResponse.data.questions || [
+      //   {
+      //     question: "Tell me about yourself and your background in software development.",
+      //     followUps: [
+      //       "What specific technologies have you worked with most recently?",
+      //       "Can you elaborate on your most significant achievement?",
+      //       "How do you stay updated with new technologies?"
+      //     ]
+      //   },
+      //   {
+      //     question: "What interests you most about this role and our company?",
+      //     followUps: [
+      //       "What do you know about our company culture?",
+      //       "How does this role align with your career goals?",
+      //       "What questions do you have about the team structure?"
+      //     ]
+      //   },
+      //   {
+      //     question: "Describe a challenging technical problem you've solved recently.",
+      //     followUps: [
+      //       "What was your thought process for solving this?",
+      //       "How did you handle any roadblocks you encountered?",
+      //       "What would you do differently if you faced this problem again?"
+      //     ]
+      //   },
+      //   {
+      //     question: "How do you approach debugging a complex issue in production?",
+      //     followUps: [
+      //       "Can you walk me through your debugging methodology?",
+      //       "How do you prioritize which issues to investigate first?",
+      //       "Tell me about a time when debugging led to a larger architectural insight."
+      //     ]
+      //   },
+      //   {
+      //     question: "Describe your experience working in a team environment.",
+      //     followUps: [
+      //       "How do you handle disagreements with team members?",
+      //       "Can you give an example of when you had to mentor someone?",
+      //       "How do you ensure effective communication in remote teams?"
+      //     ]
+      //   },
+      //   {
+      //     question: "Where do you see yourself in the next 3-5 years?",
+      //     followUps: [
+      //       "What skills are you most excited to develop?",
+      //       "How does this position fit into your long-term goals?",
+      //       "What kind of impact do you want to make in your next role?"
+      //     ]
+      //   }
+      // ];
+      //Commented Out Enhanced Fallback Questions Above
 
-      setQuestions(enhancedQuestions);
+
+            // Use only AI-generated questions
+      if (questionsResponse.data.questions && questionsResponse.data.questions.length > 0) {
+        setQuestions(questionsResponse.data.questions);
+      } else {
+        console.error('No AI questions received');
+        setQuestions([]); // Don't fall back to hardcoded
+      }
+
+      //Not using Harcoded Fallback Questions for setQuestions state
+      // setQuestions(enhancedQuestions);
       setLoading(false);
     } catch (error) {
       console.error('Error loading session:', error);
