@@ -73,6 +73,7 @@ router.post('/generate-questions', async (req, res) => {
     // 4️⃣ Parse the AI response
     // -------------------------------------------------
     const aiText = completion.choices[0].message.content;
+    console.log("🧩 Raw AI Response:", aiText);
     const questions = parseQuestionsFromAI(aiText);
 
     // -------------------------------------------------

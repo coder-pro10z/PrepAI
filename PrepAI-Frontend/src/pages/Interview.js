@@ -33,6 +33,7 @@ const Interview = () => {
   const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
   const [questions, setQuestions] = useState([]);
+  const [questionsResponse, setQuestionsResponse] = useState([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answer, setAnswer] = useState('');
   const [conversation, setConversation] = useState([]);
@@ -166,58 +167,70 @@ const Interview = () => {
       });
 
       // Enhanced fallback questions with follow-ups
-      const enhancedQuestions = questionsResponse.data.questions || [
-        {
-          question: "Tell me about yourself and your background in software development.",
-          followUps: [
-            "What specific technologies have you worked with most recently?",
-            "Can you elaborate on your most significant achievement?",
-            "How do you stay updated with new technologies?"
-          ]
-        },
-        {
-          question: "What interests you most about this role and our company?",
-          followUps: [
-            "What do you know about our company culture?",
-            "How does this role align with your career goals?",
-            "What questions do you have about the team structure?"
-          ]
-        },
-        {
-          question: "Describe a challenging technical problem you've solved recently.",
-          followUps: [
-            "What was your thought process for solving this?",
-            "How did you handle any roadblocks you encountered?",
-            "What would you do differently if you faced this problem again?"
-          ]
-        },
-        {
-          question: "How do you approach debugging a complex issue in production?",
-          followUps: [
-            "Can you walk me through your debugging methodology?",
-            "How do you prioritize which issues to investigate first?",
-            "Tell me about a time when debugging led to a larger architectural insight."
-          ]
-        },
-        {
-          question: "Describe your experience working in a team environment.",
-          followUps: [
-            "How do you handle disagreements with team members?",
-            "Can you give an example of when you had to mentor someone?",
-            "How do you ensure effective communication in remote teams?"
-          ]
-        },
-        {
-          question: "Where do you see yourself in the next 3-5 years?",
-          followUps: [
-            "What skills are you most excited to develop?",
-            "How does this position fit into your long-term goals?",
-            "What kind of impact do you want to make in your next role?"
-          ]
-        }
-      ];
+      // const enhancedQuestions = questionsResponse.data.questions || [
+      //   {
+      //     question: "Tell me about yourself and your background in software development.",
+      //     followUps: [
+      //       "What specific technologies have you worked with most recently?",
+      //       "Can you elaborate on your most significant achievement?",
+      //       "How do you stay updated with new technologies?"
+      //     ]
+      //   },
+      //   {
+      //     question: "What interests you most about this role and our company?",
+      //     followUps: [
+      //       "What do you know about our company culture?",
+      //       "How does this role align with your career goals?",
+      //       "What questions do you have about the team structure?"
+      //     ]
+      //   },
+      //   {
+      //     question: "Describe a challenging technical problem you've solved recently.",
+      //     followUps: [
+      //       "What was your thought process for solving this?",
+      //       "How did you handle any roadblocks you encountered?",
+      //       "What would you do differently if you faced this problem again?"
+      //     ]
+      //   },
+      //   {
+      //     question: "How do you approach debugging a complex issue in production?",
+      //     followUps: [
+      //       "Can you walk me through your debugging methodology?",
+      //       "How do you prioritize which issues to investigate first?",
+      //       "Tell me about a time when debugging led to a larger architectural insight."
+      //     ]
+      //   },
+      //   {
+      //     question: "Describe your experience working in a team environment.",
+      //     followUps: [
+      //       "How do you handle disagreements with team members?",
+      //       "Can you give an example of when you had to mentor someone?",
+      //       "How do you ensure effective communication in remote teams?"
+      //     ]
+      //   },
+      //   {
+      //     question: "Where do you see yourself in the next 3-5 years?",
+      //     followUps: [
+      //       "What skills are you most excited to develop?",
+      //       "How does this position fit into your long-term goals?",
+      //       "What kind of impact do you want to make in your next role?"
+      //     ]
+      //   }
+      // ];
+      //Commented Out Enhanced Fallback Questions Above
 
-      setQuestions(enhancedQuestions);
+
+            // Use only AI-generated questions
+      setQuestionsResponse(questionsResponse);
+      if (questionsResponse.data.questions && questionsResponse.data.questions.length > 0) {
+        setQuestions(questionsResponse.data.questions);
+      } else {
+        console.error('No AI questions received');
+        setQuestions([]); // Don't fall back to hardcoded
+      }
+
+      //Not using Harcoded Fallback Questions for setQuestions state
+      // setQuestions(enhancedQuestions);
       setLoading(false);
     } catch (error) {
       console.error('Error loading session:', error);
@@ -621,107 +634,182 @@ const Interview = () => {
     }));
   };
 
-  const startInterview = async () => {
+  // const startInterview = async () => {
+  //   try {
+  //     console.log('Starting interview with config:', interviewConfig);
+
+  //     // Set the session data and hide setup
+  //     const newSessionData = {
+  //       _id: 'temp-session-' + Date.now(),
+  //       ...interviewConfig
+  //     };
+  //     setSessionData(newSessionData);
+  //     setShowSetup(false);
+
+  //     let enhancedQuestions = [];
+
+  //     // Generate questions from external content if enabled
+  //     if (questionsResponse?.data?.questions?.length > 0) {
+  //     // if (interviewConfig.generateFromLinks && (interviewConfig.externalLinks.length > 0 || interviewConfig.linkContent)) {
+  //       console.log('Generating questions from external content...');
+  //       //old Questions
+  //       // enhancedQuestions = await generateQuestionsFromContent(
+  //       //   interviewConfig.linkContent,
+  //       //   interviewConfig.externalLinks
+  //       // );
+  //       //New Questions
+  //       enhancedQuestions = setQuestions(questionsResponse.data.questions || []);
+  //       console.log('Generated questions from content:', enhancedQuestions);
+  //     } else {
+  //       // Default question generation
+  //       enhancedQuestions = [
+  //         {
+  //           id: 1,
+  //           question: `Tell me about yourself and your background in ${interviewConfig.jobRole || 'software development'}.`,
+  //           category: "Introduction",
+  //           difficulty: interviewConfig.difficulty || 'medium',
+  //           followUps: [
+  //             "What specific experiences have shaped your career path?",
+  //             "What are you most proud of in your professional journey?"
+  //           ]
+  //         },
+  //         {
+  //           id: 2,
+  //           question: `What interests you most about this ${interviewConfig.jobRole || 'position'}?`,
+  //           category: "Motivation",
+  //           difficulty: interviewConfig.difficulty || 'medium',
+  //           followUps: [
+  //             "How does this role align with your career goals?",
+  //             "What excites you most about the challenges you'd face here?"
+  //           ]
+  //         },
+  //         {
+  //           id: 3,
+  //           question: "Describe a challenging situation you've faced and how you handled it.",
+  //           category: "Problem Solving",
+  //           difficulty: interviewConfig.difficulty || 'medium',
+  //           followUps: [
+  //             "What did you learn from this experience?",
+  //             "How has this experience influenced your approach to similar challenges?"
+  //           ]
+  //         }
+  //       ];
+
+  //       // Add more questions based on interview type
+  //       if (interviewConfig.interviewType === 'technical' || interviewConfig.interviewType === 'mixed') {
+  //         enhancedQuestions.push({
+  //           id: 4,
+  //           question: "Explain a technical concept you've recently learned or worked with.",
+  //           category: "Technical Knowledge",
+  //           followUps: [
+  //             "How did you apply this in a real project?",
+  //             "What challenges did you face while learning this?"
+  //           ]
+  //         });
+  //       }
+
+  //       if (interviewConfig.interviewType === 'behavioral' || interviewConfig.interviewType === 'mixed') {
+  //         enhancedQuestions.push({
+  //           id: 5,
+  //           question: "Tell me about a time you had to work with a difficult team member.",
+  //           category: "Teamwork",
+  //           followUps: [
+  //             "How do you typically handle disagreements?",
+  //             "What did you learn from this experience?"
+  //           ]
+  //         });
+  //       }
+
+  //       // Limit questions based on questionCount
+  //       const finalQuestions = enhancedQuestions.slice(0, interviewConfig.questionCount || 5);
+
+  //       console.log('Setting questions:', finalQuestions);
+  //       setQuestions(finalQuestions);
+
+  //       // Initialize speech recognition and timer for the actual interview
+  //       initializeSpeechRecognition();
+
+  //       // Start interview timer
+  //       timerRef.current = setInterval(() => {
+  //         setInterviewTime(prev => prev + 1);
+  //       }, 1000);
+
+  //       console.log('Interview started successfully!');
+  //     }
+
+  //   } catch (error) {
+  //     console.error('Error starting interview:', error);
+  //     alert('Error starting interview: ' + (error.response?.data?.message || error.message));
+  //   }
+  // };
+
+ const fallbackQuestions = [
+    {
+      id: 1,
+      question: `Tell me about yourself and your background in ${interviewConfig.jobRole || 'software development'}.`,
+      category: 'Introduction',
+      difficulty: interviewConfig.difficulty,
+      followUps: [
+        'What specific experiences have shaped your career path?',
+        'What are you most proud of in your professional journey?'
+      ],
+      tags: []
+    },
+    // …additional fallback questions as in your snippet
+  ];
+
+    const startInterview = async () => {
     try {
+      setLoading(true);
       console.log('Starting interview with config:', interviewConfig);
 
-      // Set the session data and hide setup
-      const newSessionData = {
-        _id: 'temp-session-' + Date.now(),
-        ...interviewConfig
-      };
-      setSessionData(newSessionData);
-      setShowSetup(false);
+      // 1. Request AI-generated questions directly
+      const response = await axios.post(
+        'http://localhost:5000/api/interviews/generate-questions',
+        interviewConfig
+      );
 
-      let enhancedQuestions = [];
-
-      // Generate questions from external content if enabled
-      if (interviewConfig.generateFromLinks && (interviewConfig.externalLinks.length > 0 || interviewConfig.linkContent)) {
-        console.log('Generating questions from external content...');
-        enhancedQuestions = await generateQuestionsFromContent(
-          interviewConfig.linkContent,
-          interviewConfig.externalLinks
-        );
+      // 2. Use AI questions if available
+      if (response.data.success && response.data.questions?.length > 0) {
+        const aiQuestions = response.data.questions.map((q, i) => ({
+          id: i + 1,
+          question: q.question,
+          category: q.category || interviewConfig.interviewType,
+          difficulty: q.difficulty || interviewConfig.difficulty,
+          followUps: q.followUps || [],
+          tags: q.tags || []
+        }));
+        setQuestions(aiQuestions.slice(0, interviewConfig.questionCount));
+        console.log('✅ Using AI-generated questions:', aiQuestions);
       } else {
-        // Default question generation
-        enhancedQuestions = [
-          {
-            id: 1,
-            question: `Tell me about yourself and your background in ${interviewConfig.jobRole || 'software development'}.`,
-            category: "Introduction",
-            difficulty: interviewConfig.difficulty || 'medium',
-            followUps: [
-              "What specific experiences have shaped your career path?",
-              "What are you most proud of in your professional journey?"
-            ]
-          },
-          {
-            id: 2,
-            question: `What interests you most about this ${interviewConfig.jobRole || 'position'}?`,
-            category: "Motivation",
-            difficulty: interviewConfig.difficulty || 'medium',
-            followUps: [
-              "How does this role align with your career goals?",
-              "What excites you most about the challenges you'd face here?"
-            ]
-          },
-          {
-            id: 3,
-            question: "Describe a challenging situation you've faced and how you handled it.",
-            category: "Problem Solving",
-            difficulty: interviewConfig.difficulty || 'medium',
-            followUps: [
-              "What did you learn from this experience?",
-              "How has this experience influenced your approach to similar challenges?"
-            ]
-          }
-        ];
-
-        // Add more questions based on interview type
-        if (interviewConfig.interviewType === 'technical' || interviewConfig.interviewType === 'mixed') {
-          enhancedQuestions.push({
-            id: 4,
-            question: "Explain a technical concept you've recently learned or worked with.",
-            category: "Technical Knowledge",
-            followUps: [
-              "How did you apply this in a real project?",
-              "What challenges did you face while learning this?"
-            ]
-          });
-        }
-
-        if (interviewConfig.interviewType === 'behavioral' || interviewConfig.interviewType === 'mixed') {
-          enhancedQuestions.push({
-            id: 5,
-            question: "Tell me about a time you had to work with a difficult team member.",
-            category: "Teamwork",
-            followUps: [
-              "How do you typically handle disagreements?",
-              "What did you learn from this experience?"
-            ]
-          });
-        }
-
-        // Limit questions based on questionCount
-        const finalQuestions = enhancedQuestions.slice(0, interviewConfig.questionCount || 5);
-
-        console.log('Setting questions:', finalQuestions);
-        setQuestions(finalQuestions);
-
-        // Initialize speech recognition and timer for the actual interview
-        initializeSpeechRecognition();
-
-        // Start interview timer
-        timerRef.current = setInterval(() => {
-          setInterviewTime(prev => prev + 1);
-        }, 1000);
-
-        console.log('Interview started successfully!');
+        // 3. Fallback if AI fails
+        console.warn('⚠️ No AI questions received, using fallback.');
+        setQuestions(fallbackQuestions.slice(0, interviewConfig.questionCount));
       }
 
+      // 4. Initialize session data and hide setup
+      setSessionData({
+        _id: 'temp-session-' + Date.now(),
+        ...interviewConfig,
+        startTime: Date.now()
+      });
+      setShowSetup(false);
+
+      // 5. Start speech recognition and timer
+      initializeSpeechRecognition();
+      timerRef.current = setInterval(() => {
+        setInterviewTime((prev) => prev + 1);
+      }, 1000);
+
+      setLoading(false);
+      console.log('Interview started successfully!');
     } catch (error) {
-      console.error('Error starting interview:', error);
-      alert('Error starting interview: ' + (error.response?.data?.message || error.message));
+      setLoading(false);
+      console.error('❌ Error starting interview:', error);
+      alert(
+        'Error starting interview: ' +
+          (error.response?.data?.message || error.message)
+      );
     }
   };
 
@@ -1351,7 +1439,7 @@ const Interview = () => {
                 style={styles.startBtn}
                 disabled={!interviewConfig.jobRole}
               >
-                Start Interview
+                 {loading ? 'Starting...' : 'Start Interview'}
                 <Play size={16} />
               </button>
             )}
