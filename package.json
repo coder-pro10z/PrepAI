@@ -1,0 +1,15 @@
+{
+  "name": "prep-ai",
+  "version": "1.0.0",
+  "description": "**PrepAI** is an AI‑powered interview‑practice platform.  \r It lets users generate custom interview questions with OpenAI, run real‑time mock sessions via Socket.IO, and track their progress.",
+  
+  "private": true,
+  "scripts": {
+    "start": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd PrepAI-Backend && npm start",
+    "client": "cd PrepAI-Frontend && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
