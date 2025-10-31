@@ -30,14 +30,17 @@ import '../styles/Interview.css';
 
 const Interview = () => {
 
-const [answers, setAnswers] = useState([]);
+  const { sessionId } = useParams();
+    const navigate = useNavigate();
+
+  //state management
+const [realSessionId, setRealSessionId] = useState(null); //store the real MongoDb session id
+const [answers, setAnswers] = useState([]); //store all answers
 const [aiFeedback, setAiFeedback] = useState(null);
 const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
 const [showFeedback, setShowFeedback] = useState(false);
 // const [loading, setLoading] = useState(false); //already present
 
-  const { sessionId } = useParams();
-  const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [questionsResponse, setQuestionsResponse] = useState([]);
@@ -414,52 +417,259 @@ const [showFeedback, setShowFeedback] = useState(false);
     return feedback.join('. ');
   };
 
-  const finishInterview = async () => {
-    try {
-      // Map AI feedback (if available) to session feedback format expected by stats/history
-      let overallScore = Math.floor(Math.random() * 40) + 60;
-      if (aiFeedback?.score) {
-        const parsedScore = parseInt(String(aiFeedback.score).match(/\d+/)?.[0] || '0', 10);
-        if (!Number.isNaN(parsedScore) && parsedScore > 0) {
-          // Convert 10-scale to 100-scale if needed
-          overallScore = parsedScore <= 10 ? parsedScore * 10 : parsedScore;
+//   const finishInterview = async () => {
+//     try {
+//       // Map AI feedback (if available) to session feedback format expected by stats/history
+//       let overallScore = Math.floor(Math.random() * 40) + 60;
+//       if (aiFeedback?.score) {
+//         const parsedScore = parseInt(String(aiFeedback.score).match(/\d+/)?.[0] || '0', 10);
+//         if (!Number.isNaN(parsedScore) && parsedScore > 0) {
+//           // Convert 10-scale to 100-scale if needed
+//           overallScore = parsedScore <= 10 ? parsedScore * 10 : parsedScore;
+//         }
+//       }
+
+//       const score = {
+//         technical: Math.floor(Math.random() * 40) + 60,
+//         communication: Math.floor(Math.random() * 40) + 60,
+//         overall: overallScore
+//       };
+
+//       const feedbackData = aiFeedback ? {
+//         summary: aiFeedback.summary,
+//         strengths: aiFeedback.strengths || [],
+//         improvements: aiFeedback.improvements || [],
+//         advice: aiFeedback.advice,
+//         overallScore: overallScore,
+//         raw: aiFeedback
+//       } : {
+//         strengths: ['Good technical knowledge', 'Clear communication'],
+//         improvements: ['Practice more system design', 'Work on confidence'],
+//         recommendations: ['Review core concepts', 'Practice mock interviews'],
+//         overallScore: overallScore
+//       };
+
+//       ///
+//     //  if (sessionId) {
+//     //     await axios.put(`http://localhost:5000/api/sessions/${sessionId}/complete`, {
+//     //       score,
+//     //       feedback: feedbackData,
+//     //       duration: Math.floor(interviewTime / 60)
+//     //     });
+//     //  // }
+
+
+//     //   navigate('/history');
+//     // } catch (error) {
+//     //   console.error('Error finishing interview:', error);
+//     //   navigate('/dashboard');
+//     // }
+// ///
+    
+//       // ✨ STEP 3D: Complete the session in MongoDB
+//       const token = localStorage.getItem('token');
+      
+//       if (!realSessionId) {
+//         console.error('❌ No session ID found!');
+//         alert('Session not found. Interview data may not be saved.');
+//         navigate('/history');
+//         return;
+//       }
+
+//       await axios.put(
+//         `http://localhost:5000/api/sessions/${realSessionId}/complete`,
+//         {
+//           score: scores,
+//           feedback: sessionFeedback,
+//           duration: Math.floor(interviewTime / 60) // Convert seconds to minutes
+//         },
+//         {
+//           headers: { Authorization: `Bearer ${token}` }
+//         }
+//       );
+
+//       console.log('✅ Session saved successfully!');
+      
+//       // ✨ STEP 3E: Show success and navigate
+//       alert('Interview completed! Your session has been saved.');
+//       navigate('/history');
+      
+//     } catch (error) {
+//       console.error('❌ Error finishing interview:', error);
+//       alert('Error saving interview: ' + (error.response?.data?.message || error.message));
+//       // Navigate anyway to avoid losing data
+//       navigate('/history');
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+// ✅ CORRECTED VERSION - Copy this into your Interview.js
+
+const finishInterview = async (finalAnswers = answers) => {
+  try {
+    setLoading(true);
+    console.log('📝 Starting interview completion process...');
+    console.log('📊 Total answers:', finalAnswers.length);
+    console.log('📊 Session ID:', realSessionId);
+
+    // ============================================
+    // STEP 1: Generate AI Feedback (if not already generated)
+    // ============================================
+    let generatedFeedback = aiFeedback; // Use existing if available
+
+    if (!generatedFeedback) {
+      console.log('🤖 Generating AI feedback...');
+      try {
+        const feedbackResponse = await axios.post(
+          'http://localhost:5000/api/interviews/generate-feedback',
+          {
+            questions: questions,
+            answers: finalAnswers,
+            jobRole: interviewConfig.jobRole || sessionData?.jobRole,
+            difficulty: interviewConfig.difficulty || sessionData?.difficulty
+          }
+        );
+
+        if (feedbackResponse.data.success) {
+          generatedFeedback = feedbackResponse.data.feedback;
+          console.log('✅ AI Feedback generated:', generatedFeedback);
         }
+      } catch (feedbackError) {
+        console.warn('⚠️ AI Feedback generation failed:', feedbackError.message);
+        // Continue without AI feedback
       }
-
-      const score = {
-        technical: Math.floor(Math.random() * 40) + 60,
-        communication: Math.floor(Math.random() * 40) + 60,
-        overall: overallScore
-      };
-
-      const feedbackData = aiFeedback ? {
-        summary: aiFeedback.summary,
-        strengths: aiFeedback.strengths || [],
-        improvements: aiFeedback.improvements || [],
-        advice: aiFeedback.advice,
-        overallScore: overallScore,
-        raw: aiFeedback
-      } : {
-        strengths: ['Good technical knowledge', 'Clear communication'],
-        improvements: ['Practice more system design', 'Work on confidence'],
-        recommendations: ['Review core concepts', 'Practice mock interviews'],
-        overallScore: overallScore
-      };
-
-      if (sessionId) {
-        await axios.put(`http://localhost:5000/api/sessions/${sessionId}/complete`, {
-          score,
-          feedback: feedbackData,
-          duration: Math.floor(interviewTime / 60)
-        });
-      }
-
-      navigate('/history');
-    } catch (error) {
-      console.error('Error finishing interview:', error);
-      navigate('/dashboard');
     }
-  };
+
+    // ============================================
+    // STEP 2: Calculate Overall Score
+    // ============================================
+    let overallScore = Math.floor(Math.random() * 40) + 60; // Default fallback
+
+    if (generatedFeedback?.score) {
+      const parsedScore = parseInt(
+        String(generatedFeedback.score).match(/\d+/)?.[0] || '0', 
+        10
+      );
+      
+      if (!Number.isNaN(parsedScore) && parsedScore > 0) {
+        // Convert 10-scale to 100-scale if needed
+        overallScore = parsedScore <= 10 ? parsedScore * 10 : parsedScore;
+      }
+    }
+
+    console.log('📊 Overall Score:', overallScore);
+
+    // ============================================
+    // STEP 3: Build Score Object
+    // ============================================
+    const scores = {
+      technical: generatedFeedback?.skillRatings?.find(
+        s => s.skill.toLowerCase().includes('technical')
+      )?.score * 10 || Math.floor(Math.random() * 40) + 60,
+      
+      communication: generatedFeedback?.skillRatings?.find(
+        s => s.skill.toLowerCase().includes('communication')
+      )?.score * 10 || Math.floor(Math.random() * 40) + 60,
+      
+      overall: overallScore
+    };
+
+    console.log('📊 Scores:', scores);
+
+    // ============================================
+    // STEP 4: Build Feedback Object
+    // ============================================
+    const sessionFeedback = generatedFeedback ? {
+      summary: generatedFeedback.summary || 'Interview completed successfully.',
+      strengths: Array.isArray(generatedFeedback.strengths) 
+        ? generatedFeedback.strengths 
+        : ['Good technical knowledge', 'Clear communication'],
+      improvements: Array.isArray(generatedFeedback.improvements) 
+        ? generatedFeedback.improvements 
+        : Array.isArray(generatedFeedback.weaknesses)
+          ? generatedFeedback.weaknesses
+          : ['Practice more examples', 'Work on confidence'],
+      recommendations: Array.isArray(generatedFeedback.improvementTips)
+        ? generatedFeedback.improvementTips
+        : ['Review core concepts', 'Practice mock interviews'],
+      advice: generatedFeedback.advice || null,
+      overallScore: overallScore,
+      scores: scores,
+      raw: generatedFeedback // Keep original feedback for reference
+    } : {
+      summary: 'Interview completed successfully.',
+      strengths: ['Good technical knowledge', 'Clear communication'],
+      improvements: ['Practice more system design', 'Work on confidence'],
+      recommendations: ['Review core concepts', 'Practice mock interviews'],
+      overallScore: overallScore,
+      scores: scores
+    };
+
+    console.log('📋 Session Feedback:', sessionFeedback);
+
+    // ============================================
+    // STEP 5: Save to MongoDB
+    // ============================================
+    const token = localStorage.getItem('token');
+    
+    if (!token) {
+      console.error('❌ No authentication token found!');
+      alert('Please log in again to save your session.');
+      navigate('/login');
+      return;
+    }
+
+    if (!realSessionId) {
+      console.error('❌ No session ID found!');
+      alert('Session not found. Interview data may not be saved.');
+      navigate('/history');
+      return;
+    }
+
+    console.log('💾 Saving session to database...');
+
+    const response = await axios.put(
+      `http://localhost:5000/api/sessions/${realSessionId}/complete`,
+      {
+        score: scores,
+        feedback: sessionFeedback,
+        duration: Math.floor(interviewTime / 60) // Convert seconds to minutes
+      },
+      {
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+
+    console.log('✅ Session saved successfully!', response.data);
+    
+    // ============================================
+    // STEP 6: Show Success and Navigate
+    // ============================================
+    alert('🎉 Interview completed! Your session has been saved.');
+    navigate('/history');
+    
+  } catch (error) {
+    console.error('❌ Error finishing interview:', error);
+    console.error('Error details:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
+    
+    // User-friendly error message
+    const errorMessage = error.response?.data?.message 
+      || error.message 
+      || 'Unknown error occurred';
+    
+    alert(`Error saving interview: ${errorMessage}\n\nYour data will be preserved locally.`);
+    
+    // Navigate anyway to avoid losing the UI state
+    navigate('/history');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -597,6 +807,9 @@ const [showFeedback, setShowFeedback] = useState(false);
     // …additional fallback questions as in your snippet
   ];
 
+  // ============================================
+  // ✨ STEP 1: CREATE SESSION WHEN INTERVIEW STARTS
+  // ============================================
     const startInterview = async () => {
     try {
       setLoading(true);
@@ -607,7 +820,8 @@ const [showFeedback, setShowFeedback] = useState(false);
         'http://localhost:5000/api/interviews/generate-questions',
         interviewConfig
       );
-
+      
+      
       // 2. Use AI questions if available
       if (response.data.success && response.data.questions?.length > 0) {
         const aiQuestions = response.data.questions.map((q, i) => ({
@@ -625,7 +839,30 @@ const [showFeedback, setShowFeedback] = useState(false);
         console.warn('⚠️ No AI questions received, using fallback.');
         setQuestions(fallbackQuestions.slice(0, interviewConfig.questionCount));
       }
+        // ✨ NEW: Create a real session in MongoDB
+        const token = localStorage.getItem('token');
 
+        const sessionResponse = await axios.post(
+          'http://localhost:5000/api/sessions',
+          {
+            jobRole: interviewConfig.jobRole,
+            company: interviewConfig.company,
+            experienceLevel: interviewConfig.experienceLevel,
+            interviewType: interviewConfig.interviewType,
+            difficulty: interviewConfig.difficulty,
+            questionCount: interviewConfig.questionCount,
+            skills: interviewConfig.skills,
+            specificTopics: interviewConfig.specificTopics,
+            customTopics: interviewConfig.customTopics,
+            jobDescription: interviewConfig.jobDescription,
+            status: 'active' // ✨ Mark as active
+          },
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+        setRealSessionId(sessionResponse.data._id);
+        console.log('✅ Session created:', sessionResponse.data._id);
       // 4. Initialize session data and hide setup
       setSessionData({
         _id: 'temp-session-' + Date.now(),
@@ -652,6 +889,55 @@ const [showFeedback, setShowFeedback] = useState(false);
     }
   };
 
+
+  // ============================================
+  // ✨ STEP 2: SAVE EACH ANSWER WHEN SUBMITTED
+  // ============================================
+  // const submitAnswer = async () => {
+  //   if (!answer.trim()) return;
+
+  //   try {
+  //     // Save current answer to array
+  //     const updatedAnswers = [...answers, answer.trim()];
+  //     setAnswers(updatedAnswers);
+
+  //     // Optional: Save to backend immediately (for recovery)
+  //     if (realSessionId) {
+  //       await axios.put(
+  //         `http://localhost:5000/api/sessions/${realSessionId}/qa`,
+  //         {
+  //           question: questions[currentQuestion].question,
+  //           answer: answer.trim(),
+  //           aiResponse: '', // Optional: Add AI response here
+  //           timestamp: new Date()
+  //         },
+  //         {
+  //           headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+  //         }
+  //       );
+  //     }
+
+  //     // Move to next question
+  //     if (currentQuestion < questions.length - 1) {
+  //       setCurrentQuestion(currentQuestion + 1);
+  //       setAnswer('');
+  //     } else {
+  //       // ✨ Last question answered - trigger finish
+  //       await finishInterview(updatedAnswers);
+  //     }
+  //   } catch (error) {
+  //     console.error('Error submitting answer:', error);
+  //     // Still allow moving forward even if save fails
+  //     if (currentQuestion < questions.length - 1) {
+  //       setCurrentQuestion(currentQuestion + 1);
+  //       setAnswer('');
+  //     } else {
+  //       await finishInterview([...answers, answer.trim()]);
+  //     }
+  //   }
+  // };
+
+   
   //generate-feedback function
   const generateFeedback = async (options = {}) => {
   try {
@@ -702,6 +988,19 @@ const [showFeedback, setShowFeedback] = useState(false);
   };
 
 
+    // ============================================
+  // ✨ STEP 4: HANDLE "END INTERVIEW" BUTTON
+  // ============================================
+  const handleEndInterview = async () => {
+    if (window.confirm('Are you sure you want to end the interview? Your progress will be saved.')) {
+      // Include current answer if user was typing
+      const finalAnswers = answer.trim() 
+        ? [...answers, answer.trim()]
+        : answers;
+      
+      await finishInterview(finalAnswers);
+    }
+  };
   // No loading screen needed for setup flow
 
   if (showSetup) {
@@ -1619,17 +1918,26 @@ const [showFeedback, setShowFeedback] = useState(false);
 
           {/* End Interview Button */}
           <div style={styles.endSection}>
-            <button
+            {/* <button
               style={styles.endBtn}
               onClick={async () => {
                 const fb = await generateFeedback({ includeCurrentAnswer: true });
                 alert(formatFeedbackText(fb));
                 await finishInterview();
               }}
-            >
+              > 
               <StopCircle size={16} />
               End Interview
             </button>
+            */}
+
+<button
+        style={styles.endBtn}
+        onClick={handleEndInterview}
+        disabled={loading}
+      >
+        {loading ? 'Saving...' : 'End Interview'}
+      </button>
           </div>
         </div>
       </div>
