@@ -29,6 +29,13 @@ import io from 'socket.io-client';
 import '../styles/Interview.css';
 
 const Interview = () => {
+
+const [answers, setAnswers] = useState([]);
+const [aiFeedback, setAiFeedback] = useState(null);
+const [isInterviewCompleted, setIsInterviewCompleted] = useState(false);
+const [showFeedback, setShowFeedback] = useState(false);
+// const [loading, setLoading] = useState(false); //already present
+
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const [socket, setSocket] = useState(null);
@@ -165,60 +172,6 @@ const Interview = () => {
         specificTopics: currentSessionData?.specificTopics || interviewConfig?.specificTopics || [],
         customTopics: currentSessionData?.customTopics || interviewConfig?.customTopics || ''
       });
-
-      // Enhanced fallback questions with follow-ups
-      // const enhancedQuestions = questionsResponse.data.questions || [
-      //   {
-      //     question: "Tell me about yourself and your background in software development.",
-      //     followUps: [
-      //       "What specific technologies have you worked with most recently?",
-      //       "Can you elaborate on your most significant achievement?",
-      //       "How do you stay updated with new technologies?"
-      //     ]
-      //   },
-      //   {
-      //     question: "What interests you most about this role and our company?",
-      //     followUps: [
-      //       "What do you know about our company culture?",
-      //       "How does this role align with your career goals?",
-      //       "What questions do you have about the team structure?"
-      //     ]
-      //   },
-      //   {
-      //     question: "Describe a challenging technical problem you've solved recently.",
-      //     followUps: [
-      //       "What was your thought process for solving this?",
-      //       "How did you handle any roadblocks you encountered?",
-      //       "What would you do differently if you faced this problem again?"
-      //     ]
-      //   },
-      //   {
-      //     question: "How do you approach debugging a complex issue in production?",
-      //     followUps: [
-      //       "Can you walk me through your debugging methodology?",
-      //       "How do you prioritize which issues to investigate first?",
-      //       "Tell me about a time when debugging led to a larger architectural insight."
-      //     ]
-      //   },
-      //   {
-      //     question: "Describe your experience working in a team environment.",
-      //     followUps: [
-      //       "How do you handle disagreements with team members?",
-      //       "Can you give an example of when you had to mentor someone?",
-      //       "How do you ensure effective communication in remote teams?"
-      //     ]
-      //   },
-      //   {
-      //     question: "Where do you see yourself in the next 3-5 years?",
-      //     followUps: [
-      //       "What skills are you most excited to develop?",
-      //       "How does this position fit into your long-term goals?",
-      //       "What kind of impact do you want to make in your next role?"
-      //     ]
-      //   }
-      // ];
-      //Commented Out Enhanced Fallback Questions Above
-
 
             // Use only AI-generated questions
       setQuestionsResponse(questionsResponse);
@@ -357,16 +310,11 @@ const Interview = () => {
     const currentQ = questions[currentQuestion];
 
     try {
-      // Get AI response with follow-up logic
-      const aiResponse = await axios.post('http://localhost:5000/api/interviews/ai-response', {
-        question: currentQ.question,
-        answer: answer,
-        jobRole: sessionData?.jobRole || 'Software Developer',
-        experienceLevel: sessionData?.experienceLevel || 'mid',
-        conversationHistory: conversation,
-        questionNumber: currentQuestion + 1,
-        totalQuestions: questions.length
-      });
+      // Record answer immediately
+      setAnswers((prev) => [...prev, answer]);
+
+      // Optional: placeholder AI response (backend endpoint not available)
+      const aiResponse = { data: { response: '' } };
 
       // Update conversation
       const newEntry = {
@@ -375,7 +323,7 @@ const Interview = () => {
         aiResponse: aiResponse.data.response,
         timestamp: formatTime(interviewTime),
         score: Math.floor(Math.random() * 30) + 70, // Mock scoring
-        feedback: generateFeedback(answer)
+        feedback: generateLocalFeedback(answer)
       };
 
       setConversation([...conversation, newEntry]);
@@ -404,37 +352,9 @@ const Interview = () => {
             timestamp: formatTime(interviewTime + 5)
           };
           setConversation(prev => [...prev, followUpEntry]);
-
-          // Speak the follow-up question
-          setTimeout(() => {
-            if ('speechSynthesis' in window) {
-              const voices = speechSynthesis.getVoices();
-              const preferredVoice = voices.find(voice =>
-                voice.name.includes('Google') || voice.name.includes('Microsoft')
-              ) || voices[0];
-
-              const utterance = new SpeechSynthesisUtterance(followUpQuestion);
-              utterance.voice = preferredVoice;
-              utterance.rate = 0.85;
-              utterance.pitch = 1.1;
-              utterance.volume = 0.9;
-
-              setIsPlaying(true);
-              setIsSpeaking(true);
-
-              utterance.onend = () => {
-                setIsPlaying(false);
-                setIsSpeaking(false);
-              };
-
-              speechSynthesis.speak(utterance);
-            }
-          }, 1000);
         }, 2000);
 
-        // Clear answer for follow-up
-        setAnswer('');
-        setTranscript('');
+        // Do not clear the answer on follow-up; keep user's input intact
       } else {
         // Move to next main question or finish
         if (currentQuestion < questions.length - 1) {
@@ -442,60 +362,88 @@ const Interview = () => {
           setAnswer('');
           setTranscript('');
         } else {
-          finishInterview();
+          // Generate feedback, show alert, then finish & save
+          const fb = await generateFeedback();
+          alert(formatFeedbackText(fb));
+          await finishInterview();
         }
       }
     } catch (error) {
       console.error('Error submitting answer:', error);
-      // Continue anyway for demo purposes
+      // Record answer even if AI response failed
+      setAnswers((prev) => [...prev, answer]);
+      // Continue flow
       if (currentQuestion < questions.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
         setAnswer('');
         setTranscript('');
       } else {
-        finishInterview();
+        const fb = await generateFeedback();
+        alert(formatFeedbackText(fb));
+        await finishInterview();
       }
     }
   };
 
-  const generateFeedback = (answer) => {
+  // -------------------------------------------------
+  // ① Local (per‑answer) feedback generator – **renamed**
+  // -------------------------------------------------
+  const generateLocalFeedback = (answer) => {
     const wordCount = answer.split(' ').length;
     const hasSpecificExamples = /example|instance|time when|experience|project/i.test(answer);
     const hasNumbers = /\d+/.test(answer);
 
-    let feedback = [];
+    const feedback = [];
 
     if (wordCount > 100) {
-      feedback.push("Good detailed response");
+      feedback.push('Good detailed response');
     } else if (wordCount < 50) {
-      feedback.push("Consider providing more detail");
+      feedback.push('Consider providing more detail');
     }
 
     if (hasSpecificExamples) {
-      feedback.push("Great use of specific examples");
+      feedback.push('Great use of specific examples');
     } else {
-      feedback.push("Try to include specific examples");
+      feedback.push('Try to include specific examples');
     }
 
     if (hasNumbers) {
-      feedback.push("Good use of quantifiable results");
+      feedback.push('Good use of quantifiable results');
     }
 
-    return feedback.join(". ");
+    return feedback.join('. ');
   };
 
   const finishInterview = async () => {
     try {
+      // Map AI feedback (if available) to session feedback format expected by stats/history
+      let overallScore = Math.floor(Math.random() * 40) + 60;
+      if (aiFeedback?.score) {
+        const parsedScore = parseInt(String(aiFeedback.score).match(/\d+/)?.[0] || '0', 10);
+        if (!Number.isNaN(parsedScore) && parsedScore > 0) {
+          // Convert 10-scale to 100-scale if needed
+          overallScore = parsedScore <= 10 ? parsedScore * 10 : parsedScore;
+        }
+      }
+
       const score = {
         technical: Math.floor(Math.random() * 40) + 60,
         communication: Math.floor(Math.random() * 40) + 60,
-        overall: Math.floor(Math.random() * 40) + 60
+        overall: overallScore
       };
 
-      const feedbackData = {
+      const feedbackData = aiFeedback ? {
+        summary: aiFeedback.summary,
+        strengths: aiFeedback.strengths || [],
+        improvements: aiFeedback.improvements || [],
+        advice: aiFeedback.advice,
+        overallScore: overallScore,
+        raw: aiFeedback
+      } : {
         strengths: ['Good technical knowledge', 'Clear communication'],
         improvements: ['Practice more system design', 'Work on confidence'],
-        recommendations: ['Review core concepts', 'Practice mock interviews']
+        recommendations: ['Review core concepts', 'Practice mock interviews'],
+        overallScore: overallScore
       };
 
       if (sessionId) {
@@ -634,115 +582,6 @@ const Interview = () => {
     }));
   };
 
-  // const startInterview = async () => {
-  //   try {
-  //     console.log('Starting interview with config:', interviewConfig);
-
-  //     // Set the session data and hide setup
-  //     const newSessionData = {
-  //       _id: 'temp-session-' + Date.now(),
-  //       ...interviewConfig
-  //     };
-  //     setSessionData(newSessionData);
-  //     setShowSetup(false);
-
-  //     let enhancedQuestions = [];
-
-  //     // Generate questions from external content if enabled
-  //     if (questionsResponse?.data?.questions?.length > 0) {
-  //     // if (interviewConfig.generateFromLinks && (interviewConfig.externalLinks.length > 0 || interviewConfig.linkContent)) {
-  //       console.log('Generating questions from external content...');
-  //       //old Questions
-  //       // enhancedQuestions = await generateQuestionsFromContent(
-  //       //   interviewConfig.linkContent,
-  //       //   interviewConfig.externalLinks
-  //       // );
-  //       //New Questions
-  //       enhancedQuestions = setQuestions(questionsResponse.data.questions || []);
-  //       console.log('Generated questions from content:', enhancedQuestions);
-  //     } else {
-  //       // Default question generation
-  //       enhancedQuestions = [
-  //         {
-  //           id: 1,
-  //           question: `Tell me about yourself and your background in ${interviewConfig.jobRole || 'software development'}.`,
-  //           category: "Introduction",
-  //           difficulty: interviewConfig.difficulty || 'medium',
-  //           followUps: [
-  //             "What specific experiences have shaped your career path?",
-  //             "What are you most proud of in your professional journey?"
-  //           ]
-  //         },
-  //         {
-  //           id: 2,
-  //           question: `What interests you most about this ${interviewConfig.jobRole || 'position'}?`,
-  //           category: "Motivation",
-  //           difficulty: interviewConfig.difficulty || 'medium',
-  //           followUps: [
-  //             "How does this role align with your career goals?",
-  //             "What excites you most about the challenges you'd face here?"
-  //           ]
-  //         },
-  //         {
-  //           id: 3,
-  //           question: "Describe a challenging situation you've faced and how you handled it.",
-  //           category: "Problem Solving",
-  //           difficulty: interviewConfig.difficulty || 'medium',
-  //           followUps: [
-  //             "What did you learn from this experience?",
-  //             "How has this experience influenced your approach to similar challenges?"
-  //           ]
-  //         }
-  //       ];
-
-  //       // Add more questions based on interview type
-  //       if (interviewConfig.interviewType === 'technical' || interviewConfig.interviewType === 'mixed') {
-  //         enhancedQuestions.push({
-  //           id: 4,
-  //           question: "Explain a technical concept you've recently learned or worked with.",
-  //           category: "Technical Knowledge",
-  //           followUps: [
-  //             "How did you apply this in a real project?",
-  //             "What challenges did you face while learning this?"
-  //           ]
-  //         });
-  //       }
-
-  //       if (interviewConfig.interviewType === 'behavioral' || interviewConfig.interviewType === 'mixed') {
-  //         enhancedQuestions.push({
-  //           id: 5,
-  //           question: "Tell me about a time you had to work with a difficult team member.",
-  //           category: "Teamwork",
-  //           followUps: [
-  //             "How do you typically handle disagreements?",
-  //             "What did you learn from this experience?"
-  //           ]
-  //         });
-  //       }
-
-  //       // Limit questions based on questionCount
-  //       const finalQuestions = enhancedQuestions.slice(0, interviewConfig.questionCount || 5);
-
-  //       console.log('Setting questions:', finalQuestions);
-  //       setQuestions(finalQuestions);
-
-  //       // Initialize speech recognition and timer for the actual interview
-  //       initializeSpeechRecognition();
-
-  //       // Start interview timer
-  //       timerRef.current = setInterval(() => {
-  //         setInterviewTime(prev => prev + 1);
-  //       }, 1000);
-
-  //       console.log('Interview started successfully!');
-  //     }
-
-  //   } catch (error) {
-  //     console.error('Error starting interview:', error);
-  //     alert('Error starting interview: ' + (error.response?.data?.message || error.message));
-  //   }
-  // };
-
  const fallbackQuestions = [
     {
       id: 1,
@@ -812,6 +651,56 @@ const Interview = () => {
       );
     }
   };
+
+  //generate-feedback function
+  const generateFeedback = async (options = {}) => {
+  try {
+    setLoading(true);
+    // Optionally include the current, unsent answer
+    const payloadAnswers = Array.isArray(answers) ? [...answers] : [];
+    if (options.includeCurrentAnswer && answer && answer.trim()) {
+      payloadAnswers.push(answer.trim());
+    }
+
+    const response = await axios.post('http://localhost:5000/api/interviews/generate-feedback', {
+      questions,
+      answers: payloadAnswers,
+      jobRole: interviewConfig.jobRole,
+      difficulty: interviewConfig.difficulty || sessionData?.difficulty
+    });
+
+    if (response.data.success) {
+      setAiFeedback(response.data.feedback);
+      setShowFeedback(true);
+      return response.data.feedback;
+    } else {
+      const fb = { summary: response.data.message || 'Unable to generate feedback.' };
+      setAiFeedback(fb);
+      setShowFeedback(true);
+      return fb;
+    }
+  } catch (error) {
+    console.error('Error generating feedback:', error);
+    const fb = { summary: error.response?.data?.message || error.message || 'Feedback generation failed.' };
+    setAiFeedback(fb);
+    setShowFeedback(true);
+    return fb;
+  } finally {
+    setLoading(false);
+  }
+};
+
+  const formatFeedbackText = (fb) => {
+    if (!fb) return 'No feedback available.';
+    const summary = fb.summary ? `Summary:\n${fb.summary}` : '';
+    const strengths = Array.isArray(fb.strengths) && fb.strengths.length > 0 ? `\n\nStrengths:\n- ${fb.strengths.join('\n- ')}` : '';
+    const improvements = Array.isArray(fb.improvements) && fb.improvements.length > 0 ? `\n\nImprovements:\n- ${fb.improvements.join('\n- ')}` : '';
+    const score = fb.score ? `\n\nScore: ${fb.score}` : '';
+    const advice = fb.advice ? `\n\nAdvice:\n${fb.advice}` : '';
+    const text = `${summary}${strengths}${improvements}${score}${advice}`.trim();
+    return text || 'Feedback generated.';
+  };
+
 
   // No loading screen needed for setup flow
 
@@ -1162,6 +1051,8 @@ const Interview = () => {
                     >
                       {skill}
                     </div>
+
+
                   ))}
                 </div>
 
@@ -1445,7 +1336,73 @@ const Interview = () => {
             )}
           </div>
         </div>
-      </div>
+      {showFeedback && aiFeedback && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalCard}>
+            <div style={styles.modalHeader}>
+              <h2 style={{ margin: 0 }}>Interview Feedback</h2>
+              <button
+                onClick={async () => {
+                  setShowFeedback(false);
+                  if (isInterviewCompleted) {
+                    await finishInterview();
+                  }
+                }}
+                style={styles.modalCloseBtn}
+              >
+                Close
+              </button>
+            </div>
+
+            {aiFeedback.summary && (
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>Summary</h3>
+                <p style={styles.modalParagraph}>{aiFeedback.summary}</p>
+              </div>
+            )}
+
+            {Array.isArray(aiFeedback.strengths) && aiFeedback.strengths.length > 0 && (
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>Strengths</h3>
+                <ul style={styles.modalList}>
+                  {aiFeedback.strengths.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {Array.isArray(aiFeedback.improvements) && aiFeedback.improvements.length > 0 && (
+              <div style={styles.modalSection}>
+                <h3 style={styles.modalSectionTitle}>Areas to Improve</h3>
+                <ul style={styles.modalList}>
+                  {aiFeedback.improvements.map((s, i) => (
+                    <li key={i}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {(aiFeedback.score || aiFeedback.advice) && (
+              <div style={styles.modalGrid}>
+                {aiFeedback.score && (
+                  <div style={styles.modalStat}>
+                    <div style={styles.modalStatLabel}>Overall Score</div>
+                    <div style={styles.modalStatValue}>{aiFeedback.score}</div>
+                  </div>
+                )}
+                {aiFeedback.advice && (
+                  <div style={styles.modalAdvice}>
+                    <div style={styles.modalSectionTitle}>Advice</div>
+                    <p style={styles.modalParagraph}>{aiFeedback.advice}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
     );
   }
 
@@ -1664,7 +1621,11 @@ const Interview = () => {
           <div style={styles.endSection}>
             <button
               style={styles.endBtn}
-              onClick={finishInterview}
+              onClick={async () => {
+                const fb = await generateFeedback({ includeCurrentAnswer: true });
+                alert(formatFeedbackText(fb));
+                await finishInterview();
+              }}
             >
               <StopCircle size={16} />
               End Interview
@@ -2270,10 +2231,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.3s ease'
-  },
-  recordBtnActive: {
-    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+    transition: 'all 0.3s ease',
     borderColor: '#ef4444',
     animation: 'recordingPulse 1.5s ease-in-out infinite'
   },
@@ -2501,6 +2459,89 @@ const styles = {
     gap: '8px',
     fontSize: '14px',
     fontWeight: '600'
+  },
+  // Feedback modal styles
+  modalOverlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.6)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+    zIndex: 9999
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: '720px',
+    background: '#18181b',
+    border: '1px solid #27272a',
+    borderRadius: '12px',
+    padding: '20px',
+    color: '#edecf0'
+  },
+  modalHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: '12px'
+  },
+  modalCloseBtn: {
+    background: '#27272a',
+    border: '1px solid #3f3f46',
+    color: '#edecf0',
+    borderRadius: '6px',
+    padding: '8px 12px',
+    cursor: 'pointer'
+  },
+  modalSection: {
+    marginTop: '12px'
+  },
+  modalSectionTitle: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#bef264',
+    margin: '0 0 8px 0'
+  },
+  modalParagraph: {
+    margin: 0,
+    color: '#c9c9cf',
+    lineHeight: 1.6
+  },
+  modalList: {
+    margin: 0,
+    paddingLeft: '18px',
+    color: '#c9c9cf',
+    lineHeight: 1.6
+  },
+  modalGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 2fr',
+    gap: '12px',
+    marginTop: '12px'
+  },
+  modalStat: {
+    background: '#09090b',
+    border: '1px solid #27272a',
+    borderRadius: '8px',
+    padding: '12px',
+    textAlign: 'center'
+  },
+  modalStatLabel: {
+    fontSize: '12px',
+    color: '#a1a1aa',
+    marginBottom: '4px'
+  },
+  modalStatValue: {
+    fontSize: '22px',
+    fontWeight: 700,
+    color: '#bef264'
+  },
+  modalAdvice: {
+    background: '#09090b',
+    border: '1px solid #27272a',
+    borderRadius: '8px',
+    padding: '12px'
   }
 };
 
