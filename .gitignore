@@ -7,3 +7,4 @@
 node_modules
 PrepAI-Frontend/.env.production
 PrepAI-Frontend/.env.development
+test
