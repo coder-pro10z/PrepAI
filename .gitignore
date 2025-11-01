@@ -5,3 +5,5 @@
 .env.test.local
 .env.production.local
 node_modules
+PrepAI-Frontend/.env.production
+PrepAI-Frontend/.env.development

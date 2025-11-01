@@ -28,6 +28,7 @@ import axios from 'axios';
 import io from 'socket.io-client';
 import '../styles/Interview.css';
 
+import api from "../services/api";
 const Interview = () => {
 
   const { sessionId } = useParams();
@@ -87,11 +88,14 @@ const [showFeedback, setShowFeedback] = useState(false);
   const recognitionRef = useRef(null);
   const timerRef = useRef(null);
 
+  const apiUrl = process.env.REACT_APP_API_URL?.replace('/api', '');
   useEffect(() => {
     // Only initialize if not in setup mode and we have an existing session
     if (!showSetup && sessionId && sessionId !== 'new') {
       // Initialize socket connection
-      const newSocket = io('http://localhost:5000');
+      // const newSocket = io('http://localhost:5000');
+      //new way
+      const newSocket = io(apiUrl);
       setSocket(newSocket);
       newSocket.emit('join-interview', sessionId);
 
@@ -155,14 +159,18 @@ const [showFeedback, setShowFeedback] = useState(false);
 
       // Get session details if we have a sessionId
       if (sessionId && sessionId !== 'new') {
-        const sessionResponse = await axios.get(`http://localhost:5000/api/sessions`);
+        // const sessionResponse = await axios.get(`http://localhost:5000/api/sessions`);
+        //new way
+        const sessionResponse = await axios.get(`/sessions`);
         const session = sessionResponse.data.find(s => s._id === sessionId);
         setSessionData(session);
         currentSessionData = session;
       }
 
       // Generate comprehensive questions with follow-ups
-      const questionsResponse = await axios.post('http://localhost:5000/api/interviews/generate-questions', {
+      // const questionsResponse = await axios.post('http://localhost:5000/api/interviews/generate-questions', {
+      //new way
+      const questionsResponse = await axios.post(`/interviews/generate-questions`, {
         jobRole: currentSessionData?.jobRole || interviewConfig?.jobRole || 'Software Developer',
         experienceLevel: currentSessionData?.experienceLevel || interviewConfig?.experienceLevel || 'mid',
         jobDescription: currentSessionData?.jobDescription || interviewConfig?.jobDescription || 'General software development role',
@@ -333,7 +341,9 @@ const [showFeedback, setShowFeedback] = useState(false);
 
       // Save to session
       if (sessionId) {
-        await axios.put(`http://localhost:5000/api/sessions/${sessionId}/qa`, newEntry);
+        // await axios.put(`http://localhost:5000/api/sessions/${sessionId}/qa`, newEntry);
+        //new way
+        await axios.put(`/sessions/${sessionId}/qa`, newEntry);
       }
 
       // Check if we should ask a follow-up question
@@ -451,8 +461,11 @@ const [showFeedback, setShowFeedback] = useState(false);
 
 //       ///
 //     //  if (sessionId) {
-//     //     await axios.put(`http://localhost:5000/api/sessions/${sessionId}/complete`, {
-//     //       score,
+//     //       //old way
+//     //       //await axios.put(`http://localhost:5000/api/sessions/${sessionId}/complete`, {
+//     //       //new way
+//     //       await axios.put(`/sessions/${sessionId}/complete`, {
+//     //         score,
 //     //       feedback: feedbackData,
 //     //       duration: Math.floor(interviewTime / 60)
 //     //     });
@@ -478,6 +491,8 @@ const [showFeedback, setShowFeedback] = useState(false);
 
 //       await axios.put(
 //         `http://localhost:5000/api/sessions/${realSessionId}/complete`,
+//         //new way
+//         await axios.put(`/sessions/${realSessionId}/complete`, {
 //         {
 //           score: scores,
 //           feedback: sessionFeedback,
@@ -522,7 +537,9 @@ const finishInterview = async (finalAnswers = answers) => {
       console.log('🤖 Generating AI feedback...');
       try {
         const feedbackResponse = await axios.post(
-          'http://localhost:5000/api/interviews/generate-feedback',
+          // 'http://localhost:5000/api/interviews/generate-feedback',
+          //new way
+          `/interviews/generate-feedback`,
           {
             questions: questions,
             answers: finalAnswers,
@@ -630,7 +647,9 @@ const finishInterview = async (finalAnswers = answers) => {
     console.log('💾 Saving session to database...');
 
     const response = await axios.put(
-      `http://localhost:5000/api/sessions/${realSessionId}/complete`,
+      // `http://localhost:5000/api/sessions/${realSessionId}/complete`,
+      //new way
+      `/sessions/${realSessionId}/complete`,
       {
         score: scores,
         feedback: sessionFeedback,
@@ -680,7 +699,9 @@ const finishInterview = async (finalAnswers = answers) => {
   const generateQuestionsFromContent = async (content, links) => {
     try {
       // Try to call backend API to generate questions from content
-      const response = await axios.post('http://localhost:5000/api/interviews/generate-from-content', {
+      // const response = await axios.post('http://localhost:5000/api/interviews/generate-from-content', {
+      //new way
+      const response = await axios.post(`/interviews/generate-from-content`, {
         content,
         links,
         jobRole: interviewConfig.jobRole,
@@ -817,7 +838,9 @@ const finishInterview = async (finalAnswers = answers) => {
 
       // 1. Request AI-generated questions directly
       const response = await axios.post(
-        'http://localhost:5000/api/interviews/generate-questions',
+        // 'http://localhost:5000/api/interviews/generate-questions',
+        //new way
+        `/interviews/generate-questions`,
         interviewConfig
       );
       
@@ -843,7 +866,9 @@ const finishInterview = async (finalAnswers = answers) => {
         const token = localStorage.getItem('token');
 
         const sessionResponse = await axios.post(
-          'http://localhost:5000/api/sessions',
+          // 'http://localhost:5000/api/sessions',
+          //new way
+          `/sessions`,
           {
             jobRole: interviewConfig.jobRole,
             company: interviewConfig.company,
@@ -948,7 +973,9 @@ const finishInterview = async (finalAnswers = answers) => {
       payloadAnswers.push(answer.trim());
     }
 
-    const response = await axios.post('http://localhost:5000/api/interviews/generate-feedback', {
+    // const response = await axios.post('http://localhost:5000/api/interviews/generate-feedback', {
+    //new way
+    const response = await axios.post(`/interviews/generate-feedback`, {
       questions,
       answers: payloadAnswers,
       jobRole: interviewConfig.jobRole,

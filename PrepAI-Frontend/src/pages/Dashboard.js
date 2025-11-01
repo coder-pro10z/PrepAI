@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Sidebar from '../components/Sidebar';
+import api from "../services/api";
 import { 
   Plus, 
   TrendingUp, 
@@ -176,7 +177,10 @@ const Dashboard = () => {
       setLoading(true);
       
       // Fetch user statistics
-      const statsResponse = await axios.get('http://localhost:5000/api/auth/stats', {
+      //old way
+      // const statsResponse = await axios.get('http://localhost:5000/api/auth/stats', {
+      //new way
+      const statsResponse = await axios.get('/auth/stats', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }

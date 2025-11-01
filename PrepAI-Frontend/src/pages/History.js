@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
+import api from "../services/api";
 import { 
   Calendar,
   Clock,
@@ -175,7 +176,9 @@ const History = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:5000/api/sessions', {
+      // const response = await axios.get('http://localhost:5000/api/sessions', {
+      //new way
+      const response = await axios.get('/sessions', {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -238,7 +241,9 @@ const History = () => {
         }
 
         // Call the backend API to delete from database
-        await axios.delete(`http://localhost:5000/api/sessions/${id}`, {
+        // await axios.delete(`http://localhost:5000/api/sessions/${id}`, {
+        //new way
+        await axios.delete(`/sessions/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
