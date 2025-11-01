@@ -171,11 +171,4 @@ Open `http://localhost:3000` (or 5173 for Vite) in your browser to register/logi
 
 Keep `.env` out of your commits (covered in `.gitignore`). Update `.env.example` if you add secrets.
 
-## License
-
-This project is licensed under the **MIT License** – see the `LICENSE` file.
-
----
-
 **PrepAI** offers smart, AI-powered, real-time interview practice with progress tracking — your personal AI interview coach anytime, anywhere. 🚀
-```
