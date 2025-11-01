@@ -178,7 +178,7 @@ const History = () => {
 
       // const response = await axios.get('http://localhost:5000/api/sessions', {
       //new way
-      const response = await axios.get('/sessions', {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL}/sessions`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -243,7 +243,7 @@ const History = () => {
         // Call the backend API to delete from database
         // await axios.delete(`http://localhost:5000/api/sessions/${id}`, {
         //new way
-        await axios.delete(`/sessions/${id}`, {
+        await axios.delete(`${process.env.REACT_APP_API_URL}/sessions/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         
